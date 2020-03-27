@@ -8,6 +8,7 @@
 #include <string>
 
 #include "file_descriptor.h"
+#include "base_exception.h"
 
 namespace process {
 class Process {
