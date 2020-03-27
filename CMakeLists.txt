@@ -5,7 +5,6 @@ include(gtest.cmake)
 set(CMAKE_CXX_STANDARD 17)
 
 #   examples
-add_executable(example examples/example.cpp)
 
 #   libs &
 #   main program

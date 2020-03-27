@@ -5,7 +5,7 @@
 #ifndef PROJECT_INCLUDE_FILE_DESCRIPTOR_H_
 #define PROJECT_INCLUDE_FILE_DESCRIPTOR_H_
 
-#include <base_exception.h>
+#include "base_exception.h"
 
 
 namespace process {
@@ -17,14 +17,14 @@ class FileDescriptor {
  public:
     FileDescriptor();
     explicit FileDescriptor(int fd);
-    FileDescriptor(FileDescriptor && other) noexcept;
+    FileDescriptor(FileDescriptor &&other) noexcept;
     ~FileDescriptor();
 
     int fd() const;
     void close();
-    void link(FileDescriptor const & other);
+    void link(FileDescriptor const &other);
 
-    FileDescriptor &operator =(FileDescriptor && other) noexcept;
+    FileDescriptor &operator=(FileDescriptor &&other) noexcept;
 
  private:
     int _fd;

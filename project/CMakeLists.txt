@@ -3,5 +3,6 @@ add_library(process STATIC
         lib/file_descriptor.cpp
         lib/base_exception.cpp)
 target_include_directories(process PUBLIC include)
+add_executable(echo src/echo.cpp)
 add_executable(advcpp src/main.cpp)
 target_link_libraries(advcpp process)
