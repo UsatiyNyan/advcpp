@@ -5,6 +5,7 @@ include(gtest.cmake)
 set(CMAKE_CXX_STANDARD 17)
 
 #   examples
+add_subdirectory(examples)
 
 #   libs &
 #   main program
