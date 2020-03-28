@@ -2,26 +2,26 @@
 // Created by kira on 21.02.2020.
 //
 
-#include <iostream>
+#include "global_logger.h"
 #include "process.h"
 
-int main() {
+int main(int argc, char *argv[]) {
     try {
-        std::cout << std::boolalpha;
+        log::Logger::get_instance().set_global_logger(log::create_file_logger("log.txt"));
+        process::Process proc("./echo");
 
-        process::Process proc("./example");
-
-        std::string command("ORAORA\n");
+        std::string command("MUDAMUDAMUDAMUDAMUDAMUDA\n");
         proc.write_exact(command.c_str(), command.length());
 
         char output[100] = {};
         proc.read_exact(output, command.length());
-        std::cout << output << std::endl;
-        std::cout << proc.is_readable() << std::endl;
-
+        log::debug(output);
+        log::info(output);
+        log::warn(output);
+        log::error(output);
         proc.close_stdin();
     } catch (std::exception &e) {
-        std::cerr << e.what() << std::endl;
+        log::error(e.what());
     }
 
     return 0;
