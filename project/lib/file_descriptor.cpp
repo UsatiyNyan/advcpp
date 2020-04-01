@@ -7,6 +7,8 @@
 
 
 namespace process {
+FileDescriptor::FileDescriptor() : _fd(-1) {}
+
 FileDescriptor::FileDescriptor(int fd) : _fd(fd) {}
 
 FileDescriptor::FileDescriptor(FileDescriptor &&other) noexcept {
@@ -46,8 +48,6 @@ void FileDescriptor::link(FileDescriptor const &other) {
         throw Exception("dup2 failed");
     }
 }
-
-FileDescriptor::FileDescriptor() : _fd(-1) {}
 
 int FileDescriptor::fd() const {
     return _fd;

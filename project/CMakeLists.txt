@@ -1,13 +1,19 @@
+add_library(log STATIC
+        lib/global_logger.cpp)
+target_include_directories(log PUBLIC include)
+
 add_library(process STATIC
         lib/process.cpp
         lib/file_descriptor.cpp
         lib/base_exception.cpp)
-
 target_include_directories(process PUBLIC include)
 add_executable(echo src/echo.cpp)
-add_library(log STATIC
-        lib/global_logger.cpp)
 
-target_include_directories(log PUBLIC include)
+add_library(tcp STATIC
+        lib/tcp_connection.cpp
+        lib/tcp_server.cpp)
+target_include_directories(tcp PUBLIC include)
+target_link_libraries(tcp process)
+
 add_executable(advcpp src/main.cpp)
-target_link_libraries(advcpp process log)
+target_link_libraries(advcpp process log tcp)
