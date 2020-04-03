@@ -5,53 +5,14 @@
 #ifndef PROJECT_INCLUDE_GLOBAL_LOGGER_H_
 #define PROJECT_INCLUDE_GLOBAL_LOGGER_H_
 
-#include <fstream>
-#include <iostream>
+#include "base_logger.h"
+#include "stdout_logger.h"
+#include "stderr_logger.h"
+#include "file_logger.h"
+
 #include <memory>
 
 namespace log {
-enum class Level {
-    Debug, Info, Warn, Error
-};
-
-class BaseLogger {
- public:
-    void debug(std::string s);
-    void info(std::string s);
-    void warn(std::string s);
-    void error(std::string s);
-
-    void set_level(Level level);
-    Level level() const;
-
-    virtual void flush() = 0;
- private:
-    virtual void log(std::string s, Level level) = 0;
-    Level _level = Level::Info;
-};
-
-class StdoutLogger : public BaseLogger {
-    void flush() override;
- private:
-    void log(std::string s, Level level) override;
-};
-
-class StderrLogger : public BaseLogger {
-    void flush() override;
- private:
-    void log(std::string s, Level level) override;
-};
-
-class FileLogger : public BaseLogger {
- public:
-    explicit FileLogger(std::string filename);
-    ~FileLogger();
-    void flush() override;
- private:
-    void log(std::string s, Level level) override;
-    std::ofstream _ofstream;
-};
-
 class Logger {
  public:
     BaseLogger &get_global_logger();
