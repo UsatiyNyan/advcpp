@@ -11,7 +11,7 @@
 
 
 namespace process {
-Process::Process(const std::string &path) : _status(), _pid(), _readable() {
+Process::Process(const std::string &path) : _status(), _pid(), _readable(true) {
     Pipe pipein;
     Pipe pipeout;
     _pid = fork();
@@ -61,9 +61,6 @@ void Process::write_exact(const void *data, size_t len) {
 }
 
 size_t Process::read(void *data, size_t len) {
-    if (!_readable) {
-        throw Exception("read error");
-    }
     ssize_t read_n = ::read(_pipeout.fd(), data, len);
     if (read_n <= 0) {
         _readable = false;
