@@ -15,26 +15,24 @@
 namespace log {
 class Logger {
  public:
-    BaseLogger &get_global_logger();
     void set_global_logger(std::unique_ptr<BaseLogger> logger);
     static Logger &get_instance();
+    BaseLogger &get_global_logger();
 
  private:
-    explicit Logger(std::unique_ptr<BaseLogger> logger);
-
+    Logger() = default;
     std::unique_ptr<BaseLogger> _global_logger;
-    static std::unique_ptr<Logger> _instance;
 };
 
-std::unique_ptr<FileLogger> create_file_logger(std::string filename);
+std::unique_ptr<FileLogger> create_file_logger(std::string const &filename);
 std::unique_ptr<StdoutLogger> create_stdout_logger();
 std::unique_ptr<StderrLogger> create_stderr_logger();
 void set_logger_level(Level level);
 
-void debug(std::string s);
-void info(std::string s);
-void warn(std::string s);
-void error(std::string s);
+void debug(std::string const &s);
+void info(std::string const &s);
+void warn(std::string const &s);
+void error(std::string const &s);
 }  // namespace log
 
 #endif  //PROJECT_INCLUDE_GLOBAL_LOGGER_H_

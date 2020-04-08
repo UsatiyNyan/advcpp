@@ -8,26 +8,12 @@
 
 namespace log {
 void StdoutLogger::flush() {
-    std::cout << std::endl;
+    std::cout << std::flush;
 }
 
-void StdoutLogger::log(std::string s, Level level) {
-    switch (level) {
-        case Level::Debug:
-            std::cout << "[DEBUG] ";
-            break;
-        case Level::Info:
-            std::cout << "[INFO] ";
-            break;
-        case Level::Warn:
-            std::cout << "[WARN] ";
-            break;
-        case Level::Error:
-            std::cout << "[ERROR] ";
-            break;
-        default:
-            break;
+void StdoutLogger::log(std::string const &s, Level level_) {
+    if (level() <= level_) {
+        std::cout << log_array[static_cast<int>(level_)] << ' ' << s << std::endl;
     }
-    std::cout << s << '\n';
 }
 }  // namespace log

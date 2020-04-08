@@ -6,33 +6,16 @@
 
 namespace log {
 
-FileLogger::FileLogger(std::string filename) : _ofstream(std::move(filename), std::ios::out) {}
+FileLogger::FileLogger(std::string const &filename) : _ofstream(filename, std::ios::out) {}
 
 void FileLogger::flush() {
-    _ofstream << std::endl;
+    _ofstream << std::flush;
 }
 
-FileLogger::~FileLogger() {
-}
-
-void FileLogger::log(std::string s, Level level) {
-    switch (level) {
-        case Level::Debug:
-            _ofstream << "[DEBUG] ";
-            break;
-        case Level::Info:
-            _ofstream << "[INFO] ";
-            break;
-        case Level::Warn:
-            _ofstream << "[WARN] ";
-            break;
-        case Level::Error:
-            _ofstream << "[ERROR] ";
-            break;
-        default:
-            break;
+void FileLogger::log(std::string const &s, Level level_) {
+    if (level() <= level_) {
+        _ofstream << log_array[static_cast<int>(level_)] << ' ' << s << std::endl;
     }
-    _ofstream << s << std::endl;
 }
 
 

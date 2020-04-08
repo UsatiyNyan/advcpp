@@ -11,7 +11,7 @@ namespace log {
 class StderrLogger : public BaseLogger {
     void flush() override;
  private:
-    void log(std::string s, Level level) override;
+    void log(std::string const &s, Level level) override;
 };
 }  // namespace log
 

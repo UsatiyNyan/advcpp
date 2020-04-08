@@ -11,11 +11,10 @@
 namespace log {
 class FileLogger : public BaseLogger {
  public:
-    explicit FileLogger(std::string filename);
-    ~FileLogger();
+    explicit FileLogger(std::string const &filename);
     void flush() override;
  private:
-    void log(std::string s, Level level) override;
+    void log(std::string const &s, Level level) override;
     std::ofstream _ofstream;
 };
 }  // namespace log

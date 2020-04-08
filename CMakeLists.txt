@@ -4,12 +4,12 @@ include(gtest.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 
-#   examples
-add_subdirectory(examples)
-
 #   libs &
 #   main program
 add_subdirectory(project)
+
+#   examples
+add_subdirectory(examples)
 
 #   tests
 #   GTest needs threading support
