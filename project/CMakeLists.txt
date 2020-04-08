@@ -1,8 +1,6 @@
-add_library(process STATIC
-        lib/process.cpp
-        lib/file_descriptor.cpp
-        lib/base_exception.cpp)
-target_include_directories(process PUBLIC include)
+add_subdirectory(lib)
+
 add_executable(echo src/echo.cpp)
 add_executable(advcpp src/main.cpp)
-target_link_libraries(advcpp process)
+
+target_link_libraries(advcpp ${LIBS})
