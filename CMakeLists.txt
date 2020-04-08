@@ -4,11 +4,15 @@ include(gtest.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 
-#   examples
-
 #   libs &
 #   main program
 add_subdirectory(project)
+
+#   examples
+add_executable(server example/server.cpp)
+target_link_libraries(server ${LIBS})
+add_executable(client example/client.cpp)
+target_link_libraries(client ${LIBS})
 
 #   tests
 #   GTest needs threading support
