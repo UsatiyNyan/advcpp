@@ -8,7 +8,7 @@
 class TestProcess : public ::testing::Test {
  protected:
     void SetUp() {
-        proc = new process::Process("./example");
+        proc = new process::Process("../project/echo");
     }
     void TearDown() {
         delete proc;
