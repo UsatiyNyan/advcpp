@@ -11,7 +11,7 @@
 
 
 namespace process {
-Process::Process(const std::string &path) : _status(), _pid(), _readable() {
+Process::Process(const std::string &path) : _status(), _pid(), _readable(true) {
     Pipe pipein;
     Pipe pipeout;
     _pid = fork();
@@ -46,7 +46,7 @@ Process::~Process() {
 }
 
 size_t Process::write(const void *data, size_t len) {
-    auto written = ::write(_pipein.fd(), data, len);
+    ssize_t written = ::write(_pipein.fd(), data, len);
     if (written == -1) {
         throw Exception("write error");
     }
@@ -61,18 +61,19 @@ void Process::write_exact(const void *data, size_t len) {
 }
 
 size_t Process::read(void *data, size_t len) {
-    auto read_n = ::read(_pipeout.fd(), data, len);
-    if (read_n == -1) {
+    ssize_t read_n = ::read(_pipeout.fd(), data, len);
+    if (read_n <= 0) {
         _readable = false;
+    }
+    if (read_n == -1) {
         throw Exception("read error");
     }
-    _readable = read_n;
     return read_n;
 }
 
 void Process::read_exact(void *data, size_t len) {
     size_t read_n = 0;
-    while (len != read_n) {
+    while (len != read_n && _readable) {
         read_n += read(static_cast<char *>(data) + read_n, len - read_n);
     }
 }

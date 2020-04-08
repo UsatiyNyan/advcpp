@@ -8,7 +8,7 @@
 class TestProcess : public ::testing::Test {
  protected:
     void SetUp() {
-        proc = new process::Process("./example");
+        proc = new process::Process("../project/echo");
     }
     void TearDown() {
         delete proc;
@@ -21,14 +21,12 @@ TEST_F(TestProcess, many_words) {
         std::string command = std::to_string(i) + '\n';
         proc->write(command.c_str(), command.length());
     }
+    proc->close_stdin();
 
-    while (true) {
+    while (proc->is_readable()) {
         char output[256] = {};
         proc->read(output, sizeof(output));
         std::cout << output << std::endl;
-        if (!proc->is_readable()) {
-            break;
-        }
     }
 }
 

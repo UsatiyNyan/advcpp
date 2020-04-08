@@ -14,21 +14,16 @@ namespace process {
 class Process {
  public:
     explicit Process(const std::string &path);
-
     ~Process();
 
     size_t write(const void *data, size_t len);
-
     void write_exact(const void *data, size_t len);
-
     size_t read(void *data, size_t len);
-
     void read_exact(void *data, size_t len);
 
     [[nodiscard]] bool is_readable() const;
 
     void close_stdin();
-
     void close();
 
  private:
