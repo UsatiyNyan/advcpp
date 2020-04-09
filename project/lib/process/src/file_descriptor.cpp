@@ -6,11 +6,17 @@
 #include <unistd.h>
 
 
-namespace process {
+using exception::Exception;
+
+namespace fd {
+FileDescriptor::FileDescriptor() {
+    _fd = -1;
+}
+
 FileDescriptor::FileDescriptor(int fd) : _fd(fd) {}
 
 FileDescriptor::FileDescriptor(FileDescriptor &&other) noexcept {
-    if (this->_fd == other._fd) {
+    if (this == &other) {
         return;
     }
     this->_fd = other._fd;
@@ -33,6 +39,7 @@ void FileDescriptor::close() {
 }
 
 FileDescriptor &FileDescriptor::operator=(FileDescriptor &&other) noexcept {
+    this->close();
     if (this->_fd == other._fd) {
         return *this;
     }
@@ -46,8 +53,6 @@ void FileDescriptor::link(FileDescriptor const &other) {
         throw Exception("dup2 failed");
     }
 }
-
-FileDescriptor::FileDescriptor() : _fd(-1) {}
 
 int FileDescriptor::fd() const {
     return _fd;

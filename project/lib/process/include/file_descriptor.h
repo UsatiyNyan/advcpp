@@ -8,7 +8,7 @@
 #include "base_exception.h"
 
 
-namespace process {
+namespace fd {
 enum IO : int {
     READ, WRITE
 };
@@ -18,13 +18,15 @@ class FileDescriptor {
     FileDescriptor();
     explicit FileDescriptor(int fd);
     FileDescriptor(FileDescriptor &&other) noexcept;
+    FileDescriptor(FileDescriptor const &other) = delete;
     ~FileDescriptor();
 
-    int fd() const;
+    [[nodiscard]] int fd() const;
     void close();
     void link(FileDescriptor const &other);
 
     FileDescriptor &operator=(FileDescriptor &&other) noexcept;
+    FileDescriptor &operator=(FileDescriptor const &other) = delete;
 
  private:
     int _fd;
@@ -33,9 +35,9 @@ class FileDescriptor {
 class Pipe {
  public:
     Pipe();
-    const FileDescriptor &read() const;
+    [[nodiscard]] const FileDescriptor &read() const;
     FileDescriptor &&read();
-    const FileDescriptor &write() const;
+    [[nodiscard]] const FileDescriptor &write() const;
     FileDescriptor &&write();
  private:
     FileDescriptor _read;

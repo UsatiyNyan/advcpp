@@ -10,26 +10,25 @@
 #include <memory>
 
 namespace tcp {
-using ConnectionPtr = std::unique_ptr<Connection>;
-
 class Server {
  public:
-    Server(std::string ip, short port);
-    ConnectionPtr accept();
+    Server(std::string ip, uint16_t port);
+    ~Server();
+    Connection accept();
 
-    void open(std::string ip, short port);
+    void open(std::string ip, uint16_t port);
     void close();
 
     void set_max_connections(int max_connections);
 
-    bool is_opened() const;
-    std::string const &addr() const;
-    uint16_t port() const;
+    [[nodiscard]] bool is_opened() const;
+    [[nodiscard]] std::string const &addr() const;
+    [[nodiscard]] uint16_t port() const;
  private:
-    process::FileDescriptor _fd;
+    fd::FileDescriptor _fd;
     std::string _addr;
-    uint16_t _port;
-    bool _opened;
+    uint16_t _port = 0;
+    bool _opened = false;
 };
 }  // namespace tcp
 

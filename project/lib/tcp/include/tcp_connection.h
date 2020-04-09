@@ -13,12 +13,14 @@ namespace tcp {
 class Connection {
     friend class Server;
     Connection();
-    Connection(process::FileDescriptor fd,
+    Connection(fd::FileDescriptor fd,
             std::string src_address, uint16_t src_port,
             std::string dst_address, uint16_t dst_port);
  public:
-    Connection(std::string ip, short port);
-    void connect(std::string ip, short port);
+    Connection(Connection &&other) noexcept;
+    Connection &operator=(Connection &&other) noexcept;
+    Connection(std::string ip, uint16_t port);
+    void connect(std::string ip, uint16_t port);
     void close();
 
     size_t write(const void *data, size_t size);
@@ -28,15 +30,13 @@ class Connection {
 
     void set_timeout(int timeout = 0);
 
-    bool is_opened() const;
-    std::string const &dst_addr() const;
-    std::string const &src_addr() const;
-    uint16_t dst_port() const;
-    uint16_t src_port() const;
-
-    Connection(Connection &other) = delete;
+    [[nodiscard]] bool is_opened() const;
+    [[nodiscard]] std::string const &dst_addr() const;
+    [[nodiscard]] std::string const &src_addr() const;
+    [[nodiscard]] uint16_t dst_port() const;
+    [[nodiscard]] uint16_t src_port() const;
  private:
-    process::FileDescriptor _fd;
+    fd::FileDescriptor _fd;
     std::string _dst_addr;
     std::string _src_addr;
     uint16_t _dst_port;

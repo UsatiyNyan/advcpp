@@ -1,4 +1,4 @@
 add_subdirectory(process)
 add_subdirectory(tcp)
 
-set(LIBS process tcp PARENT_SCOPE)
+set(LIBS process fd except tcp PARENT_SCOPE)

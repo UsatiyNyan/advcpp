@@ -9,7 +9,7 @@
 #include <string>
 
 
-namespace process {
+namespace exception {
 class Exception : public std::exception {
  public:
     explicit Exception(std::string es);

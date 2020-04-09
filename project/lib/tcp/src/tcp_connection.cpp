@@ -9,14 +9,17 @@
 #include "tcp_connection.h"
 #include "base_exception.h"
 
-namespace tcp {
-Connection::Connection()
-: _fd(),
-  _src_addr(), _src_port(),
-  _dst_addr(), _dst_port(),
-  _opened(true) {}
 
-Connection::Connection(process::FileDescriptor fd,
+using exception::Exception;
+
+namespace tcp {
+Connection::Connection() {
+    _src_port = 0;
+    _dst_port = 0;
+    _opened = false;
+}
+
+Connection::Connection(fd::FileDescriptor fd,
                        std::string src_address, uint16_t src_port,
                        std::string dst_address, uint16_t dst_port)
         : _fd(std::move(fd)),
@@ -24,14 +27,30 @@ Connection::Connection(process::FileDescriptor fd,
           _dst_addr(std::move(dst_address)), _dst_port(dst_port),
           _opened(true) {}
 
-Connection::Connection(std::string ip, short port) : Connection() {
+Connection::Connection(Connection &&other) noexcept :
+_fd(std::move(other._fd)),
+_dst_addr(std::move(other._dst_addr)), _dst_port(other._dst_port),
+_src_addr(std::move(other._src_addr)), _src_port(other._src_port),
+_opened(other._opened) {}
+
+Connection &Connection::operator=(Connection &&other) noexcept {
+    _fd = std::move(other._fd);
+    _dst_addr = std::move(other._dst_addr);
+    _dst_port = other._dst_port;
+    _src_addr = std::move(other._src_addr);
+    _src_port = other._src_port;
+    _opened = other._opened;
+    return *this;
+}
+
+Connection::Connection(std::string ip, uint16_t port) : Connection() {
     connect(std::move(ip), port);
 }
 
-void Connection::connect(std::string ip, short port) {
+void Connection::connect(std::string ip, uint16_t port) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
-        throw process::Exception("socket creation failed");
+        throw Exception("socket creation failed");
     }
 
     sockaddr_in addr{};
@@ -42,7 +61,7 @@ void Connection::connect(std::string ip, short port) {
     if (::connect(sock,
             reinterpret_cast<sockaddr *>(&addr),
             sizeof(addr)) == -1) {
-        throw process::Exception("connection failed");
+        throw Exception("connection failed");
     }
 
     sockaddr_in client_address{};
@@ -50,7 +69,7 @@ void Connection::connect(std::string ip, short port) {
     if (getsockname(sock,
             reinterpret_cast<sockaddr *>(&client_address),
             reinterpret_cast<socklen_t *>(&client_address_size)) == -1) {
-        throw process::Exception("client info error");
+        throw Exception("client info error");
     }
 
 
@@ -60,7 +79,7 @@ void Connection::connect(std::string ip, short port) {
     _src_port = ntohs(client_address.sin_port);
 
     _opened = true;
-    _fd = std::move(process::FileDescriptor(sock));
+    _fd = std::move(fd::FileDescriptor(sock));
 }
 
 void Connection::close() {
@@ -72,7 +91,7 @@ size_t Connection::write(const void *data, size_t size) {
     ssize_t written = send(_fd.fd(), data, size, 0);
     if (written == -1) {
         _opened = false;
-        throw process::Exception("write error");
+        throw Exception("write error");
     }
     return written;
 }
@@ -88,7 +107,7 @@ size_t Connection::read(void *data, size_t size) {
     ssize_t read_n = ::recv(_fd.fd(), data, size, 0);
     if (read_n == -1) {
         _opened = false;
-        throw process::Exception("read error");
+        throw Exception("read error");
     }
     return read_n;
 }
@@ -107,14 +126,14 @@ void Connection::set_timeout(int timeout) {
                    SO_SNDTIMEO,
                    &_timeout,
                    sizeof(_timeout)) == -1) {
-        throw process::Exception("timeout set failed");
+        throw Exception("timeout set failed");
     }
     if (setsockopt(_fd.fd(),
                    SOL_SOCKET,
                    SO_RCVTIMEO,
                    &_timeout,
                    sizeof(_timeout)) == -1) {
-        throw process::Exception("timeout set failed");
+        throw Exception("timeout set failed");
     }
 }
 
