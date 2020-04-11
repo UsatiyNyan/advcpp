@@ -21,17 +21,23 @@ Connection::Connection() {
 
 Connection::Connection(fd::FileDescriptor fd,
                        std::string src_address, uint16_t src_port,
-                       std::string dst_address, uint16_t dst_port)
-        : _fd(std::move(fd)),
-          _src_addr(std::move(src_address)), _src_port(src_port),
-          _dst_addr(std::move(dst_address)), _dst_port(dst_port),
-          _opened(true) {}
+                       std::string dst_address, uint16_t dst_port) {
+    _fd = std::move(fd);
+    _src_addr = std::move(src_address);
+    _src_port = src_port,
+    _dst_addr = std::move(dst_address);
+    _dst_port = dst_port,
+    _opened = true;
+}
 
-Connection::Connection(Connection &&other) noexcept :
-_fd(std::move(other._fd)),
-_dst_addr(std::move(other._dst_addr)), _dst_port(other._dst_port),
-_src_addr(std::move(other._src_addr)), _src_port(other._src_port),
-_opened(other._opened) {}
+Connection::Connection(Connection &&other) noexcept {
+    _fd = std::move(other._fd);
+    _dst_addr = std::move(other._dst_addr);
+    _dst_port = other._dst_port;
+    _src_addr = std::move(other._src_addr);
+    _src_port = other._src_port;
+    _opened = other._opened;
+}
 
 Connection &Connection::operator=(Connection &&other) noexcept {
     _fd = std::move(other._fd);
