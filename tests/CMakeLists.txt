@@ -1,5 +1,5 @@
 find_package (Threads)
 add_executable(tests_gtest tests.cpp)
-target_link_libraries(tests_gtest process)
+target_link_libraries(tests_gtest ${LIBS})
 target_link_libraries(tests_gtest gtest ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(tests_gtest ${GTEST_LIBRARIES})
