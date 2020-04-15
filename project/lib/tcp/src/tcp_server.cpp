@@ -16,10 +16,6 @@ Server::Server(std::string ip, uint16_t port) {
     open(std::move(ip), port);
 }
 
-Server::~Server() {
-    close();
-}
-
 void Server::open(std::string ip, uint16_t port) {
     auto listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (listener == -1) {
