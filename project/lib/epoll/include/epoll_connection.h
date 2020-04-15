@@ -16,7 +16,7 @@ namespace epoll {
 class Connection {
     friend class Epoll;
  public:
-    Connection();
+    Connection() = default;
     explicit Connection(fd::FileDescriptor fd);
     Connection(Connection &&other) noexcept;
     Connection &operator=(Connection &&other) noexcept;
@@ -26,6 +26,8 @@ class Connection {
 
     void read(size_t size);
     void write(const void *data, size_t size);
+    void try_read();
+    void try_write();
     size_t await_read(void *data);
     size_t await_write();
 
@@ -37,20 +39,16 @@ class Connection {
     [[nodiscard]] uint16_t dst_port() const;
     [[nodiscard]] uint16_t src_port() const;
  private:
-    void try_read();
-    void try_write();
-
     fd::FileDescriptor _fd;
     std::string _dst_addr;
     std::string _src_addr;
-    uint16_t _dst_port;
-    uint16_t _src_port;
-    bool _opened;
+    uint16_t _dst_port = 0;
+    uint16_t _src_port = 0;
+    bool _opened = false;
 
     std::string _write_cache;
     std::string _read_cache;
-    size_t _to_write;
-    size_t _to_read;
+    ssize_t _to_read = 0;
 };
 }  // namespace epoll
 

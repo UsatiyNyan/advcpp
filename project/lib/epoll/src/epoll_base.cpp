@@ -102,25 +102,28 @@ void Epoll::default_accept() {
 }
 
 void Epoll::handle_client(int client_fd, unsigned event) {
-    if (event & EPOLLHUP || event & EPOLLERR) {
+    Connection &connection = _connections[client_fd];
+    if (event & EPOLLHUP || event & EPOLLERR || !connection.is_opened()) {
+        del(connection);
         _connections.erase(client_fd);
         return;
     }
-    Connection &connection = _connections[client_fd];
     if (event & EPOLLIN) {
         _on_read(connection);
-        if (connection.is_readable()) {
-//            mod(connection, EPOLLIN);
-        } else {
+        if (!connection.is_readable()) {
             mod(connection, EPOLLOUT);
+            return;
         }
     } else if (event & EPOLLOUT) {
         _on_write(connection);
-        if (connection.is_writable()) {
-//            mod(connection, EPOLLOUT);
-        } else {
+        if (!connection.is_writable()) {
             mod(connection, EPOLLIN);
+            return;
         }
+    }
+    if (!connection.is_writable() && !connection.is_readable()) {
+        del(connection);
+        _connections.erase(client_fd);
     }
 }
 }  // namespace epoll

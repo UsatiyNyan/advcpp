@@ -11,26 +11,27 @@ using namespace std::chrono_literals;
 
 int main() {
     auto on_read = [](epoll::Connection &conn) {
-        std::string to_read(1024, 0);
-        static int i = 1;
-        if (i == 1) {
-            conn.read(to_read.length());
-            --i;
+        std::string to_read(9, 0);
+        conn.read(to_read.length());
+        std::cout << "reading on " << conn.dst_addr() << std::endl;
+        conn.try_read();
+        if (!conn.is_readable()) {
+            conn.await_read(to_read.data());
+            std::cout << to_read << std::endl;
         }
-        to_read.resize(conn.await_read(to_read.data()));
-        std::cout << to_read << std::endl;
     };
 
     auto on_write = [](epoll::Connection &conn) {
-        auto time = std::chrono::system_clock::now() + 7s;
+        std::string to_write("MUDAMUDAMUDA");
+        static int i = 1;
+        if (i == 1) {
+            conn.write(to_write.c_str(), to_write.length());
+            i--;
+        }
+        static auto time = std::chrono::system_clock::now() + 10s;
         if (std::chrono::system_clock::now() >= time) {
-            static int i = 1;
-            if (i == 1) {
-                std::string to_write("MUDAMUDAMUDA");
-                conn.write(to_write.c_str(), to_write.length());
-                --i;
-            }
-            conn.await_write();
+            std::cout << "writing to " << conn.dst_addr() << std::endl;
+            conn.try_write();
         }
     };
 

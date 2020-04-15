@@ -10,17 +10,11 @@ int main() {
     try {
         std::string to_write("ORAORAORA");
         connection.write(to_write.c_str(), to_write.length());
-        while (connection.is_writable()) {
-            connection.await_write();
-        }
+        connection.await_write();
 
-        std::string to_read(1024, 0);
+        std::string to_read(12, 0);
         connection.read(to_read.length());
-        size_t muda_size = 0;
-        while (connection.is_readable()) {
-            muda_size = connection.await_read(to_read.data());
-        }
-        to_read.resize(muda_size);
+        connection.await_read(to_read.data());
         std::cout << to_read << std::endl;
 
     } catch (std::exception & e) {

@@ -13,12 +13,6 @@
 using exception::Exception;
 
 namespace epoll {
-Connection::Connection() {
-    _src_port = 0;
-    _dst_port = 0;
-    _opened = false;
-}
-
 Connection::Connection(fd::FileDescriptor fd) {
     sockaddr_in src_address{};
     sockaddr_in dst_address{};
@@ -61,7 +55,7 @@ Connection &Connection::operator=(Connection &&other) noexcept {
     return *this;
 }
 
-Connection::Connection(std::string ip, uint16_t port) : Connection() {
+Connection::Connection(std::string ip, uint16_t port) {
     connect(std::move(ip), port);
 }
 
@@ -107,59 +101,57 @@ void Connection::close() {
 
 void Connection::read(size_t size) {
     _to_read += size;
-    _read_cache.resize(_to_read);
 }
 
 void Connection::write(const void *data, size_t size) {
     _write_cache += std::string(static_cast<const char *>(data), size);
-    _to_write += size;
 }
 
 void Connection::try_read() {
-    ssize_t read_n = recv(_fd.fd(), _read_cache.data() + _read_cache.size() - _to_read, _to_read, 0);
+    char buf[_to_read];
+    ssize_t read_n = recv(_fd.fd(), buf, _to_read, 0);
     if (read_n == -1) {
         _opened = false;
         throw Exception("read error");
     }
     _to_read -= read_n;
-//    if (read_n == 0) {
-//        _to_read = 0;
-//    }
+    if (read_n == 0) {
+        _opened = false;
+        _to_read = 0;
+        return;
+    }
+    _read_cache += buf;
 }
 
 void Connection::try_write() {
-    ssize_t written = send(_fd.fd(), _write_cache.data() + _write_cache.size() - _to_write, _to_write, 0);
+    ssize_t written = send(_fd.fd(), _write_cache.data(), _write_cache.size(), 0);
     if (written == -1) {
         _opened = false;
         throw Exception("write error");
     }
-    _to_write -= written;
-//    if (written == 0) {
-//        _to_write = 0;
-//    }
+    if (written == 0) {
+        _opened = false;
+    }
+    _write_cache.substr(written).swap(_write_cache);
 }
 
 size_t Connection::await_read(void *data) {
-    if (is_readable()) {
+    while (is_readable()) {
         try_read();
-        return 0;
-    } else {
-        size_t size = _read_cache.size();
-        std::copy(_read_cache.begin(), _read_cache.end(), static_cast<char *>(data));
-        std::string().swap(_read_cache);
-        return size;
     }
+    size_t size = _read_cache.size();
+    std::copy(_read_cache.begin(), _read_cache.end(), static_cast<char *>(data));
+    std::string().swap(_read_cache);
+    return size;
 }
 
 size_t Connection::await_write() {
-    if (is_writable()) {
+    while (is_writable()) {
         try_write();
-        return 0;
-    } else {
-        size_t size = _write_cache.size();
-        std::string().swap(_write_cache);
-        return size;
     }
+    size_t size = _write_cache.size();
+    std::string().swap(_write_cache);
+    return size;
 }
 
 bool Connection::is_opened() const {
@@ -167,11 +159,11 @@ bool Connection::is_opened() const {
 }
 
 bool Connection::is_readable() const {
-    return _opened && (_to_read > 0);
+    return _to_read > 0;
 }
 
 bool Connection::is_writable() const {
-    return _opened && (_to_write > 0);
+    return !_write_cache.empty();
 }
 
 std::string const &Connection::dst_addr() const {
