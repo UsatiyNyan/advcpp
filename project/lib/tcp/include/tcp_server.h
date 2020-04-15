@@ -13,7 +13,6 @@ namespace tcp {
 class Server {
  public:
     Server(std::string ip, uint16_t port);
-    ~Server();
     Connection accept();
 
     void open(std::string ip, uint16_t port);

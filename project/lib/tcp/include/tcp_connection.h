@@ -12,7 +12,6 @@
 namespace tcp {
 class Connection {
     friend class Server;
-    Connection();
     Connection(fd::FileDescriptor fd,
             std::string src_address, uint16_t src_port,
             std::string dst_address, uint16_t dst_port);
@@ -39,9 +38,9 @@ class Connection {
     fd::FileDescriptor _fd;
     std::string _dst_addr;
     std::string _src_addr;
-    uint16_t _dst_port;
-    uint16_t _src_port;
-    bool _opened;
+    uint16_t _dst_port = 0;
+    uint16_t _src_port = 0;
+    bool _opened = false;
 };
 }  // namespace tcp
 

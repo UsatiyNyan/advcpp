@@ -13,12 +13,6 @@
 using exception::Exception;
 
 namespace tcp {
-Connection::Connection() {
-    _src_port = 0;
-    _dst_port = 0;
-    _opened = false;
-}
-
 Connection::Connection(fd::FileDescriptor fd,
                        std::string src_address, uint16_t src_port,
                        std::string dst_address, uint16_t dst_port) {
@@ -49,13 +43,13 @@ Connection &Connection::operator=(Connection &&other) noexcept {
     return *this;
 }
 
-Connection::Connection(std::string ip, uint16_t port) : Connection() {
+Connection::Connection(std::string ip, uint16_t port) {
     connect(std::move(ip), port);
 }
 
 void Connection::connect(std::string ip, uint16_t port) {
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == -1) {
+    fd::FileDescriptor sock(socket(AF_INET, SOCK_STREAM, 0));
+    if (sock.fd() == -1) {
         throw Exception("socket creation failed");
     }
 
@@ -64,20 +58,19 @@ void Connection::connect(std::string ip, uint16_t port) {
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = inet_addr(ip.c_str());
 
-    if (::connect(sock,
+    if (::connect(sock.fd(),
             reinterpret_cast<sockaddr *>(&addr),
             sizeof(addr)) == -1) {
         throw Exception("connection failed");
     }
 
     sockaddr_in client_address{};
-    int client_address_size = sizeof(client_address);
-    if (getsockname(sock,
+    socklen_t client_address_size = sizeof(client_address);
+    if (getsockname(sock.fd(),
             reinterpret_cast<sockaddr *>(&client_address),
-            reinterpret_cast<socklen_t *>(&client_address_size)) == -1) {
+            &client_address_size) == -1) {
         throw Exception("client info error");
     }
-
 
     _dst_addr = std::move(ip);
     _dst_port = port;
@@ -85,7 +78,7 @@ void Connection::connect(std::string ip, uint16_t port) {
     _src_port = ntohs(client_address.sin_port);
 
     _opened = true;
-    _fd = std::move(fd::FileDescriptor(sock));
+    _fd = std::move(sock);
 }
 
 void Connection::close() {
