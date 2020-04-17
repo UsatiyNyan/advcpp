@@ -6,7 +6,7 @@
 #include "base_exception.h"
 
 
-namespace process {
+namespace exception {
 Exception::Exception(std::string es) : _errstr(std::move(es)) {
     _errstr += "\n";
     _errstr += strerror(errno);

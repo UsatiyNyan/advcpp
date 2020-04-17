@@ -10,17 +10,19 @@
 #include "file_descriptor.h"
 
 
+using exception::Exception;
+
 namespace process {
 Process::Process(const std::string &path) : _status(), _pid(), _readable(true) {
-    Pipe pipein;
-    Pipe pipeout;
+    fd::Pipe pipein;
+    fd::Pipe pipeout;
     _pid = fork();
     if (_pid == -1) {
         throw Exception("process was not created");
     }
     if (_pid == 0) {
-        FileDescriptor fd_in(READ);
-        FileDescriptor fd_out(WRITE);
+        fd::FileDescriptor fd_in(fd::READ);
+        fd::FileDescriptor fd_out(fd::WRITE);
 
         pipein.read().link(fd_in);
         pipeout.write().link(fd_out);

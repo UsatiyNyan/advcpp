@@ -29,8 +29,8 @@ class Process {
  private:
     pid_t _pid;
     int _status;
-    FileDescriptor _pipein;
-    FileDescriptor _pipeout;
+    fd::FileDescriptor _pipein;
+    fd::FileDescriptor _pipeout;
     bool _readable;
 };
 }  // namespace process
