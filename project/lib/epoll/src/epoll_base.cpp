@@ -14,19 +14,24 @@
 using exception::Exception;
 
 namespace epoll {
+const size_t QUEUE_SIZE = 128;
+
 Epoll::Epoll(ClientCallback on_read, ClientCallback on_write)
 : _on_read(std::move(on_read)),
-  _on_write(std::move(on_write)) {
-    ssize_t epoll_fd = epoll_create(0xD1C);
-    if (epoll_fd == -1) {
+  _on_write(std::move(on_write)),
+  _epoll_fd(epoll_create(0xD1C)) {
+    if (_epoll_fd.fd() == -1) {
         throw Exception("epoll creation failed");
     }
-    _epoll_fd = fd::FileDescriptor(epoll_fd);
 }
 
-void Epoll::add_server(fd::FileDescriptor const & fd, AcceptCallback accept_callback) {
-    ctl(fd, EPOLLIN, EPOLL_CTL_ADD);
-    _server_fd = fd.fd();
+void Epoll::add_server(fd::FileDescriptor const & server_fd, AcceptCallback accept_callback) {
+    if (_server_fd != -1) {
+        ctl(_server_fd, 0, EPOLL_CTL_DEL);
+        std::map<int, Connection>().swap(_connections);
+    }
+    ctl(server_fd.fd(), EPOLLIN, EPOLL_CTL_ADD);
+    _server_fd = server_fd.fd();
     if (!accept_callback) {
         accept_callback = std::bind(&Epoll::default_accept, this);
     }
@@ -34,22 +39,22 @@ void Epoll::add_server(fd::FileDescriptor const & fd, AcceptCallback accept_call
 }
 
 void Epoll::add(Connection const &connection, uint32_t events) {
-    ctl(connection._fd, events, EPOLL_CTL_ADD);
+    ctl(connection._fd.fd(), events, EPOLL_CTL_ADD);
 }
 
 void Epoll::mod(Connection const &connection, uint32_t events) {
-    ctl(connection._fd, events, EPOLL_CTL_MOD);
+    ctl(connection._fd.fd(), events, EPOLL_CTL_MOD);
 }
 
 void Epoll::del(Connection const &connection) {
-    ctl(connection._fd, 0, EPOLL_CTL_DEL);
+    ctl(connection._fd.fd(), 0, EPOLL_CTL_DEL);
 }
 
-void Epoll::ctl(fd::FileDescriptor const &fd, uint32_t events, int operation) {
+void Epoll::ctl(int fd, uint32_t events, int operation) {
     epoll_event event{};
-    event.data.fd = fd.fd();
+    event.data.fd = fd;
     event.events = events;
-    if (epoll_ctl(_epoll_fd.fd(), operation, fd.fd(), &event) == -1) {
+    if (epoll_ctl(_epoll_fd.fd(), operation, fd, &event) == -1) {
         throw Exception("epoll_ctl error on operation: " + std::to_string(operation));
     }
 }
@@ -58,18 +63,18 @@ void Epoll::spin_once() {
     if (_server_fd == -1) {
         throw Exception("polling events w/o server");
     }
-    epoll_event epoll_events[QUEUE_SIZE];
-    int nfds = epoll_wait(_epoll_fd.fd(), epoll_events, QUEUE_SIZE, -1);
+    std::vector<epoll_event> epoll_events(QUEUE_SIZE);
+    int nfds = epoll_wait(_epoll_fd.fd(), epoll_events.data(), QUEUE_SIZE, -1);
     if (nfds == -1) {
         if (errno == EINTR) {
-            return;
+            return spin_once();
         }
         throw Exception("epoll_wait failed");
     }
 
     for (int i = 0; i < nfds; ++i) {
         int fd = epoll_events[i].data.fd;
-        auto events = epoll_events[i].events;
+        uint32_t events = epoll_events[i].events;
         if (fd == _server_fd) {
             _accept();
         } else {
@@ -97,7 +102,7 @@ void Epoll::default_accept() {
     if (client_fd == -1) {
         throw Exception("accept error");
     }
-    _connections[client_fd] = Connection(std::move(fd::FileDescriptor(client_fd)));
+    _connections[client_fd] = Connection(fd::FileDescriptor(client_fd));
     add(_connections[client_fd], EPOLLIN);
 }
 
@@ -120,10 +125,6 @@ void Epoll::handle_client(int client_fd, unsigned event) {
             mod(connection, EPOLLIN);
             return;
         }
-    }
-    if (!connection.is_writable() && !connection.is_readable()) {
-        del(connection);
-        _connections.erase(client_fd);
     }
 }
 }  // namespace epoll

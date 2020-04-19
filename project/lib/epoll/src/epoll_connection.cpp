@@ -91,7 +91,7 @@ void Connection::connect(std::string ip, uint16_t port) {
     _src_port = ntohs(client_address.sin_port);
 
     _opened = true;
-    _fd = std::move(fd::FileDescriptor(sock));
+    _fd = fd::FileDescriptor(sock);
 }
 
 void Connection::close() {

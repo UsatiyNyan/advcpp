@@ -33,8 +33,6 @@ class Server {
     fd::FileDescriptor _server_fd;
     Epoll _epoll;
 
-    uint32_t _max_conns = 0;
-
     std::string _addr;
     uint16_t _port = 0;
 

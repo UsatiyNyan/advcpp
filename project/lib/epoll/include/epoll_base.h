@@ -20,7 +20,7 @@ class Epoll {
  public:
     Epoll(ClientCallback on_read, ClientCallback on_write);
 
-    void add_server(fd::FileDescriptor const &fd, AcceptCallback accept_callback = nullptr);
+    void add_server(fd::FileDescriptor const &fd, AcceptCallback accept_callback = {});
     void add(Connection const &connection, uint32_t events);
     void mod(Connection const &connection, uint32_t events);
     void del(Connection const &connection);
@@ -31,10 +31,8 @@ class Epoll {
     void set_read_cb(ClientCallback on_read);
     void set_write_cb(ClientCallback on_write);
 
-    static const size_t QUEUE_SIZE = 128;
-
  private:
-    void ctl(fd::FileDescriptor const &fd, uint32_t events, int operation);
+    void ctl(int fd, uint32_t events, int operation);
     void default_accept();
     void handle_client(int clinet_fd, unsigned event);
 

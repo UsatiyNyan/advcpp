@@ -19,8 +19,8 @@ Server::Server(std::string ip, uint16_t port, ClientCallback on_read, ClientCall
 }
 
 void Server::open(std::string ip, uint16_t port) {
-    auto listener = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
-    if (listener == -1) {
+    auto listener = fd::FileDescriptor(socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
+    if (listener.fd() == -1) {
         throw Exception("socket creation failed");
     }
 
@@ -28,7 +28,7 @@ void Server::open(std::string ip, uint16_t port) {
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = inet_addr(ip.c_str());
-    if (bind(listener,
+    if (bind(listener.fd(),
              reinterpret_cast<sockaddr *>(&addr),
              sizeof(addr)) == -1) {
         throw Exception("bind failed");
@@ -38,9 +38,9 @@ void Server::open(std::string ip, uint16_t port) {
     _port = port;
 
     _opened = true;
-    _server_fd = fd::FileDescriptor(listener);
+    _server_fd = std::move(listener);
 
-    set_max_connections(Epoll::QUEUE_SIZE);
+    set_max_connections(1024);
 }
 
 void Server::close() {
