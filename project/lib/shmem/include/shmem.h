@@ -19,39 +19,37 @@ namespace shmem {
 struct AllocState {
     char *start;
     char *end;
-    size_t count;
 };
 
 class SharedMem {
- public:
-    explicit SharedMem(size_t size) : _size(size){
+    explicit SharedMem(size_t size) : _size(size), _pid_of_creator(getpid()) {
         _mmap = ::mmap(nullptr, _size,
                        PROT_WRITE | PROT_READ,
                        MAP_SHARED | MAP_ANONYMOUS, -1, 0);
         if (_mmap == MAP_FAILED) {
-            throw Exception("Error creaing mmap");
+            throw Exception("error creating mmap");
         }
 
         // initialize state
         _state = static_cast<AllocState *>(_mmap);
         _state->start = static_cast<char *>(_mmap) + sizeof(*_state);
         _state->end = static_cast<char *>(_mmap) + _size;
-        _state->count = 0;
 
         // initialize semaphore
         _semaphore = reinterpret_cast<sem_t *>(_state->start);
-        ::sem_init(_semaphore, 1, 1);
+        if (::sem_init(_semaphore, 1, 1) == -1) {
+            throw Exception("error on sem_init");
+        }
         _state->start += sizeof(*_semaphore);
     }
 
     ~SharedMem() {
-        ::munmap(_mmap, _size);
+        if (getpid() == _pid_of_creator) {
+            ::munmap(_mmap, _size);
+        }
     }
 
-    [[nodiscard]] void *ptr() const {
-        return _mmap;
-    }
-
+ public:
     [[nodiscard]] sem_t *semaphore() const {
         return _semaphore;
     }
@@ -59,25 +57,33 @@ class SharedMem {
     [[nodiscard]] AllocState *state() const {
         return _state;
     }
+    static SharedMem &get_instance(size_t size = 0) {
+        static SharedMem instance(size);
+        return instance;
+    }
 
  private:
+    int _pid_of_creator;
     void *_mmap;
     AllocState *_state;
     sem_t *_semaphore;
     size_t _size;
 };
 
+
 class Lock {
  public:
-    explicit Lock(SharedMem &sh_mem) : _sem(*sh_mem.semaphore()) {
-        ::sem_wait(&_sem);
+    Lock() : _sem(SharedMem::get_instance().semaphore()) {
+        ::sem_wait(_sem);
     }
+    Lock(Lock &&other) noexcept : _sem(other._sem) {}
 
     ~Lock() {
-        ::sem_post(&_sem);
+        ::sem_post(_sem);
     }
+
  private:
-    sem_t& _sem;
+    sem_t *_sem;
 };
 
 template <class T>
@@ -85,9 +91,9 @@ class ShAlloc {
  public:
     using value_type = T;
 
-    ShAlloc() = default;
-
-    explicit ShAlloc(AllocState* state) : _state(state) {}
+    ShAlloc() {
+        _state = SharedMem::get_instance().state();
+    }
 
     template <class U>
     explicit ShAlloc(const ShAlloc<U> & other) : _state(other.state()) {}
@@ -112,7 +118,7 @@ class ShAlloc {
     }
 
  private:
-    AllocState *_state = nullptr;
+    AllocState *_state;
 };
 
 template <class K, class V, class Compare = std::less<K>>
@@ -120,18 +126,18 @@ class map {
     using PairAlloc = ShAlloc<std::pair<const K, V>>;
     using Container = std::map<K, V, Compare, PairAlloc>;
  public:
-    explicit map(size_t n) : _memory(n) {
-        _container = reinterpret_cast<Container *>(_memory.state()->start);
-        _memory.state()->start += sizeof(Container);
-        _container = new(_container) Container(PairAlloc(_memory.state()));
-    }
-    Lock &&lock() {
-        return std::move(Lock(_memory));
+    explicit map(size_t n) {
+        SharedMem &memory = SharedMem::get_instance(n);
+        _container = reinterpret_cast<Container *>(memory.state()->start);
+        memory.state()->start += sizeof(Container);
+        _container = new(_container) Container(PairAlloc());
     }
     V &operator[](K && key) {
+        shmem::Lock _;
         return _container->operator[](std::forward<K>(key));
     }
     void erase(K && key) {
+        shmem::Lock _;
         _container->erase(key);
     }
     auto begin() {
@@ -161,7 +167,6 @@ class map {
 
  private:
     Container *_container;
-    SharedMem _memory;
 };
 
 using string = std::basic_string<char, std::char_traits<char>, ShAlloc<char>>;
