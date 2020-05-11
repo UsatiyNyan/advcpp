@@ -14,9 +14,9 @@
 namespace epoll {
 class Server {
  public:
-    Server(std::string ip, uint16_t port, ClientCallback on_read, ClientCallback on_write);
+    Server(const std::string &ip, uint16_t port, ClientCallback on_read, ClientCallback on_write);
 
-    void open(std::string ip, uint16_t port);
+    void open(const std::string &ip, uint16_t port);
     void close();
 
     void set_max_connections(uint32_t max_connections);
@@ -35,8 +35,6 @@ class Server {
 
     std::string _addr;
     uint16_t _port = 0;
-
-    bool _opened = false;
 };
 }  // namespace epoll
 

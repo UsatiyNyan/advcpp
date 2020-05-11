@@ -20,10 +20,10 @@ class Epoll {
  public:
     Epoll(ClientCallback on_read, ClientCallback on_write);
 
-    void add_server(fd::FileDescriptor const &fd, AcceptCallback accept_callback = {});
-    void add(Connection const &connection, uint32_t events);
-    void mod(Connection const &connection, uint32_t events);
-    void del(Connection const &connection);
+    void add_server(const fd::FileDescriptor &fd, AcceptCallback accept_callback = {});
+    void add(const Connection &connection, uint32_t events);
+    void mod(const Connection &connection, uint32_t events);
+    void del(const Connection &connection);
 
     void spin_once();
     void spin();

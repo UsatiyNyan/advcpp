@@ -27,8 +27,7 @@ Epoll::Epoll(ClientCallback on_read, ClientCallback on_write)
 
 void Epoll::add_server(fd::FileDescriptor const & server_fd, AcceptCallback accept_callback) {
     if (_server_fd != -1) {
-        ctl(_server_fd, 0, EPOLL_CTL_DEL);
-        std::map<int, Connection>().swap(_connections);
+        _connections.clear();
     }
     ctl(server_fd.fd(), EPOLLIN, EPOLL_CTL_ADD);
     _server_fd = server_fd.fd();
@@ -67,14 +66,14 @@ void Epoll::spin_once() {
     int nfds = epoll_wait(_epoll_fd.fd(), epoll_events.data(), QUEUE_SIZE, -1);
     if (nfds == -1) {
         if (errno == EINTR) {
-            return spin_once();
+            spin_once();
+            return;
         }
         throw Exception("epoll_wait failed");
     }
-
-    for (int i = 0; i < nfds; ++i) {
-        int fd = epoll_events[i].data.fd;
-        uint32_t events = epoll_events[i].events;
+    for (epoll_event& event : epoll_events) {
+        int fd = event.data.fd;
+        uint32_t events = event.events;
         if (fd == _server_fd) {
             _accept();
         } else {
@@ -98,7 +97,7 @@ void Epoll::set_write_cb(ClientCallback on_write) {
 }
 
 void Epoll::default_accept() {
-    int client_fd = ::accept(_server_fd,nullptr,nullptr);
+    int client_fd = ::accept(_server_fd, nullptr, nullptr);
     if (client_fd == -1) {
         throw Exception("accept error");
     }
@@ -109,7 +108,6 @@ void Epoll::default_accept() {
 void Epoll::handle_client(int client_fd, unsigned event) {
     Connection &connection = _connections[client_fd];
     if (event & EPOLLHUP || event & EPOLLERR || !connection.is_opened()) {
-        del(connection);
         _connections.erase(client_fd);
         return;
     }

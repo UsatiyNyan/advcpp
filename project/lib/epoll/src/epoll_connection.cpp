@@ -33,7 +33,6 @@ Connection::Connection(fd::FileDescriptor fd) {
     _src_port = ntohs(src_address.sin_port);
     _dst_addr = inet_ntoa(dst_address.sin_addr);
     _dst_port = ntohs(dst_address.sin_port);
-    _opened = true;
 }
 
 Connection::Connection(Connection &&other) noexcept {
@@ -42,7 +41,6 @@ Connection::Connection(Connection &&other) noexcept {
     _dst_port = other._dst_port;
     _src_addr = std::move(other._src_addr);
     _src_port = other._src_port;
-    _opened = other._opened;
 }
 
 Connection &Connection::operator=(Connection &&other) noexcept {
@@ -51,15 +49,14 @@ Connection &Connection::operator=(Connection &&other) noexcept {
     _dst_port = other._dst_port;
     _src_addr = std::move(other._src_addr);
     _src_port = other._src_port;
-    _opened = other._opened;
     return *this;
 }
 
-Connection::Connection(std::string ip, uint16_t port) {
-    connect(std::move(ip), port);
+Connection::Connection(const std::string &ip, uint16_t port) {
+    connect(ip, port);
 }
 
-void Connection::connect(std::string ip, uint16_t port) {
+void Connection::connect(const std::string &ip, uint16_t port) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
         throw Exception("socket creation failed");
@@ -85,17 +82,15 @@ void Connection::connect(std::string ip, uint16_t port) {
     }
 
 
-    _dst_addr = std::move(ip);
+    _dst_addr = ip;
     _dst_port = port;
     _src_addr = inet_ntoa(client_address.sin_addr);
     _src_port = ntohs(client_address.sin_port);
 
-    _opened = true;
     _fd = fd::FileDescriptor(sock);
 }
 
 void Connection::close() {
-    _opened = false;
     _fd.close();
 }
 
@@ -111,12 +106,12 @@ void Connection::try_read() {
     char buf[_to_read];
     ssize_t read_n = recv(_fd.fd(), buf, _to_read, 0);
     if (read_n == -1) {
-        _opened = false;
+        _fd.close();
         throw Exception("read error");
     }
     _to_read -= read_n;
     if (read_n == 0) {
-        _opened = false;
+        _fd.close();
         _to_read = 0;
         return;
     }
@@ -126,12 +121,12 @@ void Connection::try_read() {
 void Connection::try_write() {
     ssize_t written = send(_fd.fd(), _write_cache.data(), _write_cache.size(), 0);
     if (written == -1) {
-        _opened = false;
+        _fd.close();
         throw Exception("write error");
     }
-    if (written == 0) {
-        _opened = false;
-    }
+//    if (written == 0) {
+//        _opened = false;
+//    }
     _write_cache.substr(written).swap(_write_cache);
 }
 
@@ -141,7 +136,7 @@ size_t Connection::await_read(void *data) {
     }
     size_t size = _read_cache.size();
     std::copy(_read_cache.begin(), _read_cache.end(), static_cast<char *>(data));
-    std::string().swap(_read_cache);
+    _read_cache.clear();
     return size;
 }
 
@@ -150,12 +145,12 @@ size_t Connection::await_write() {
         try_write();
     }
     size_t size = _write_cache.size();
-    std::string().swap(_write_cache);
+    _write_cache.clear();
     return size;
 }
 
 bool Connection::is_opened() const {
-    return _opened;
+    return _fd.fd() != -1;
 }
 
 bool Connection::is_readable() const {

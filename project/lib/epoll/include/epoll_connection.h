@@ -20,8 +20,8 @@ class Connection {
     explicit Connection(fd::FileDescriptor fd);
     Connection(Connection &&other) noexcept;
     Connection &operator=(Connection &&other) noexcept;
-    Connection(std::string ip, uint16_t port);
-    void connect(std::string ip, uint16_t port);
+    Connection(const std::string &ip, uint16_t port);
+    void connect(const std::string &ip, uint16_t port);
     void close();
 
     void read(size_t size);
@@ -44,7 +44,6 @@ class Connection {
     std::string _src_addr;
     uint16_t _dst_port = 0;
     uint16_t _src_port = 0;
-    bool _opened = false;
 
     std::string _write_cache;
     std::string _read_cache;

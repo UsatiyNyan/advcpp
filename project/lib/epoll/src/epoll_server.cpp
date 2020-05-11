@@ -12,14 +12,14 @@
 using exception::Exception;
 
 namespace epoll {
-Server::Server(std::string ip, uint16_t port, ClientCallback on_read, ClientCallback on_write)
+Server::Server(const std::string &ip, uint16_t port, ClientCallback on_read, ClientCallback on_write)
 : _epoll(std::move(on_read), std::move(on_write)) {
-    open(std::move(ip), port);
+    open(ip, port);
     _epoll.add_server(_server_fd);
 }
 
-void Server::open(std::string ip, uint16_t port) {
-    auto listener = fd::FileDescriptor(socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
+void Server::open(const std::string &ip, uint16_t port) {
+    fd::FileDescriptor listener{socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP)};
     if (listener.fd() == -1) {
         throw Exception("socket creation failed");
     }
@@ -34,23 +34,20 @@ void Server::open(std::string ip, uint16_t port) {
         throw Exception("bind failed");
     }
 
-    _addr = std::move(ip);
+    _addr = ip;
     _port = port;
-
-    _opened = true;
     _server_fd = std::move(listener);
 
     set_max_connections(1024);
 }
 
 void Server::close() {
-    _opened = false;
     _server_fd.close();
 }
 
 void Server::set_max_connections(uint32_t max_connections) {
     if (listen(_server_fd.fd(), max_connections) == -1) {
-        _opened = false;
+        _server_fd.close();
         throw Exception("listen error");
     }
 }
@@ -72,7 +69,7 @@ void Server::spin() {
 }
 
 bool Server::is_opened() const {
-    return _opened;
+    return _server_fd.fd() != -1;
 }
 
 std::string const &Server::addr() const {
