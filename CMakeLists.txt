@@ -13,7 +13,10 @@ add_executable(server example/server.cpp)
 target_link_libraries(server ${LIBS})
 add_executable(client example/client.cpp)
 target_link_libraries(client ${LIBS})
-add_subdirectory(examples)
+add_executable(epoll_server example/epoll_server.cpp)
+target_link_libraries(epoll_server ${LIBS})
+add_executable(epoll_client example/epoll_client.cpp)
+target_link_libraries(epoll_client ${LIBS})
 
 #   tests
 #   GTest needs threading support
