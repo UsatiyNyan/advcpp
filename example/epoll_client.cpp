@@ -8,13 +8,17 @@
 int main() {
     epoll::Connection connection("0.0.0.0", 8080);
     try {
-        std::string to_write("ORAORAORA");
+        std::string to_write("ORA");
         connection.write(to_write.c_str(), to_write.length());
-        connection.await_write();
+        connection.finish_write();
+
+        to_write = "ORAORA";
+        connection.write(to_write.c_str(), to_write.length());
+        connection.finish_write();
 
         std::string to_read(12, 0);
         connection.read(to_read.length());
-        connection.await_read(to_read.data());
+        connection.finish_read(to_read.data());
         std::cout << to_read << std::endl;
 
     } catch (std::exception & e) {

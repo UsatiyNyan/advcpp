@@ -28,8 +28,8 @@ class Connection {
     void write(const void *data, size_t size);
     void try_read();
     void try_write();
-    size_t await_read(void *data);
-    size_t await_write();
+    size_t finish_read(void *data);
+    size_t finish_write();
 
     [[nodiscard]] bool is_opened() const;
     [[nodiscard]] bool is_writable() const;

@@ -124,13 +124,15 @@ void Connection::try_write() {
         _fd.close();
         throw Exception("write error");
     }
-//    if (written == 0) {
-//        _opened = false;
-//    }
+    if (written == 0) {
+        _fd.close();
+        _write_cache.clear();
+        return;
+    }
     _write_cache.substr(written).swap(_write_cache);
 }
 
-size_t Connection::await_read(void *data) {
+size_t Connection::finish_read(void *data) {
     while (is_readable()) {
         try_read();
     }
@@ -140,7 +142,7 @@ size_t Connection::await_read(void *data) {
     return size;
 }
 
-size_t Connection::await_write() {
+size_t Connection::finish_write() {
     while (is_writable()) {
         try_write();
     }

@@ -113,13 +113,13 @@ void Epoll::handle_client(int client_fd, unsigned event) {
     }
     if (event & EPOLLIN) {
         _on_read(connection);
-        if (!connection.is_readable()) {
+        if (!connection.is_readable() && connection.is_opened()) {
             mod(connection, EPOLLOUT);
             return;
         }
     } else if (event & EPOLLOUT) {
         _on_write(connection);
-        if (!connection.is_writable()) {
+        if (!connection.is_writable() && connection.is_opened()) {
             mod(connection, EPOLLIN);
             return;
         }
