@@ -19,6 +19,7 @@ namespace shmem {
 struct AllocState {
     char *start;
     char *end;
+    sem_t *memory_lock;
 };
 
 class SharedMem {
@@ -34,6 +35,9 @@ class SharedMem {
         _state = static_cast<AllocState *>(_mmap);
         _state->start = static_cast<char *>(_mmap) + sizeof(*_state);
         _state->end = static_cast<char *>(_mmap) + _size;
+        if (::sem_init(_state->memory_lock, 1, 1) == -1) {
+            throw Exception("error on sem_init");
+        }
 
         // initialize semaphore
         _semaphore = reinterpret_cast<sem_t *>(_state->start);
@@ -45,8 +49,9 @@ class SharedMem {
 
     ~SharedMem() {
         if (getpid() == _pid_of_creator) {
-            ::munmap(_mmap, _size);
+            sem_destroy(_semaphore);
         }
+        ::munmap(_mmap, _size);
     }
 
  public:
@@ -57,8 +62,13 @@ class SharedMem {
     [[nodiscard]] AllocState *state() const {
         return _state;
     }
-    static SharedMem &get_instance(size_t size = 0) {
-        static SharedMem instance(size);
+    static size_t set_size(size_t size) {
+        static size_t mem_size = size;
+        return mem_size;
+    }
+    static SharedMem &get_instance() {
+        constexpr size_t DEFAULT_MMAP_SIZE = 1024;
+        static SharedMem instance(set_size(DEFAULT_MMAP_SIZE));
         return instance;
     }
 
@@ -76,7 +86,6 @@ class Lock {
     Lock() : _sem(SharedMem::get_instance().semaphore()) {
         ::sem_wait(_sem);
     }
-    Lock(Lock &&other) noexcept : _sem(other._sem) {}
 
     ~Lock() {
         ::sem_post(_sem);
@@ -96,9 +105,10 @@ class ShAlloc {
     }
 
     template <class U>
-    explicit ShAlloc(const ShAlloc<U> & other) : _state(other.state()) {}
+    explicit ShAlloc(const ShAlloc<U> &other) : _state(other.state()) {}
 
     T *allocate(size_t n) {
+        Lock _;
         char *result = _state->start;
         if (result + n * sizeof(T)> _state->end) {
             throw std::bad_alloc();
@@ -108,6 +118,7 @@ class ShAlloc {
     }
 
     void deallocate(T *ptr, size_t n) {
+        Lock _;
         if (_state->start - n * sizeof(T) == reinterpret_cast<char *>(ptr)) {
             _state->start -= n * sizeof(T);
         }
@@ -127,44 +138,27 @@ class map {
     using Container = std::map<K, V, Compare, PairAlloc>;
  public:
     explicit map(size_t n) {
-        SharedMem &memory = SharedMem::get_instance(n);
+        Lock _;
+        SharedMem::set_size(n);
+        SharedMem &memory = SharedMem::get_instance();
         _container = reinterpret_cast<Container *>(memory.state()->start);
         memory.state()->start += sizeof(Container);
         _container = new(_container) Container(PairAlloc());
     }
-    V &operator[](K && key) {
-        shmem::Lock _;
+    V operator[](K && key) {
+        Lock _;
         return _container->operator[](std::forward<K>(key));
     }
     void erase(K && key) {
-        shmem::Lock _;
+        Lock _;
         _container->erase(key);
     }
-    auto begin() {
+    auto begin() {  // here for example purposes
         return _container->begin();
     }
     auto end() {
         return _container->end();
     }
-    auto cbegin() {
-        return _container->cbegin();
-    }
-    auto cend() {
-        return _container->cend();
-    }
-    auto rbegin() {
-        return _container->rbegin();
-    }
-    auto rend() {
-        return _container->rend();
-    }
-    auto rcbegin() {
-        return _container->rcbegin();
-    }
-    auto rcend() {
-        return _container->rcend();
-    }
-
  private:
     Container *_container;
 };
