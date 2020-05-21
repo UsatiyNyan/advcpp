@@ -13,7 +13,8 @@ add_executable(server example/server.cpp)
 target_link_libraries(server ${LIBS})
 add_executable(client example/client.cpp)
 target_link_libraries(client ${LIBS})
-add_subdirectory(examples)
+add_executable(shmem_usage example/shmem_usage.cpp)
+target_link_libraries(shmem_usage ${LIBS})
 
 #   tests
 #   GTest needs threading support
